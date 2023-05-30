@@ -1,10 +1,19 @@
 <?php
+/***********************************
+ * 프로젝트명 : laravel_board
+ * 디렉토리   : Controllers
+ * 파일명     : BoardController.php
+ * 이력       : v001 0526 최혁재 new
+ *              v002 0530 김영범 유효성 체크 추가
+ ***********************************/
 
 namespace App\Http\Controllers;
+
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use App\Models\Boards;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 class BoardsController extends Controller
 {
@@ -37,6 +46,14 @@ class BoardsController extends Controller
      */
     public function store(Request $req)
     {
+
+        // v002 add start
+        $req->validate([
+            'title' => 'required|between:3,30'
+            ,'content' => 'required|max:1000'
+        ]);
+        // v002 add end
+
         $boards = new Boards([
             'title'=>$req->input('title')
             ,'content'=>$req->input('content')
@@ -80,19 +97,60 @@ class BoardsController extends Controller
      */
     public function update(Request $req, $id)
     {
-        $boards = Boards::where('id',$id)->update(['title'=>$req->input('title')
-        ,'content'=>$req->input('content')]);
+        // v002 add start
 
-        $boards = Boards::find($id);
 
-        return redirect('/boards/'.$id);
+        // $validator=Validator::make(['id'=>$id],[
+        //     'id' => 'required|exists.boards|integer'
+        // ]);
+        // if($validator->fails()){
+        //     return redirect('/boards')->view('edit')->withErrors($validator);
+        // }
+
+        $arr = ['id'=>$id];
+        // $req->merge($arr);
+        $req->request->add($arr);
+
+        // 마지 넘믹
+
+        // $req->validate([
+        //     'id' => 'required|integer'//v002 add
+        //     ,'title' => 'required|between:3,30'
+        //     ,'content' => 'required|max:1000'
+        // ]);
+        // v002 add end
+        // $boards = Boards::where('id',$id)->update(['title'=>$req->input('title')
+        // ,'content'=>$req->input('content')]);
+
+        // $boards = Boards::find($id);
+
+         // 유효성 검사 방법 2
+        $validator = Validator::make(
+            $req->only('id','title','content')
+            ,[
+                'id' => 'required|integer'
+                ,'title' => 'required|between:3,30'
+                ,'content' => 'required|max:1000'
+            ]
+        );
+        if($validator->fails()){
+            return redirect()
+            ->back()
+            ->withErrors($validator)
+            ->withInput($req->only('title','content'));
+        }
+
         // return redirect()->route('boards.show',['board'=>$id]);
 
-        // $result = Boards::find($id);
-        // $result->title=$request->title;
-        // $result->contnent=$request->contest;
-        // $result->save();
-        // return view('detail')->with('data',Boards::findOfFail($id));
+        $result = Boards::find($id);
+        $result->title=$req->title;
+        $result->content=$req->content;
+        $result->save();
+        return view('detail')->with('data',Boards::find($id));
+
+        // return redirect('/boards/'.$id);
+
+
     }
 
     /**
