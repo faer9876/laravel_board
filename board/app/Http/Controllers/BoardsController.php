@@ -24,6 +24,10 @@ class BoardsController extends Controller
      */
     public function index()
     {
+        // 로그인 체크
+        if(auth()->guest()){
+            return redirect()->route('users.login');
+        }
         $result = Boards::select(['id','title','hits','created_at','updated_at'])->orderBy('hits','desc')->get();
         return view('list')->with('datas',$result);
     }
@@ -35,6 +39,9 @@ class BoardsController extends Controller
      */
     public function create()
     {
+        if(auth()->guest()){
+            return redirect()->route('users.login');
+        }
         return view('write');
     }
 
@@ -46,7 +53,9 @@ class BoardsController extends Controller
      */
     public function store(Request $req)
     {
-
+        if(auth()->guest()){
+            return redirect()->route('users.login');
+        }
         // v002 add start
         $req->validate([
             'title' => 'required|between:3,30'
@@ -70,6 +79,9 @@ class BoardsController extends Controller
      */
     public function show($id)
     {
+        if(auth()->guest()){
+            return redirect()->route('users.login');
+        }
         $boards = Boards::find($id);
         $boards->hits++;
         $boards->save();
@@ -84,6 +96,9 @@ class BoardsController extends Controller
      */
     public function edit($id)
     {
+        if(auth()->guest()){
+            return redirect()->route('users.login');
+        }
         $boards = Boards::find($id); //실패시 boolean 값으로 리턴(프로그램 이어짐)
         return view('edit')->with('data',$boards);
     }
@@ -164,4 +179,6 @@ class BoardsController extends Controller
         Boards::where('id',$id)->firstOrFail()->delete();
         return redirect('/boards');
     }
+
+
 }
