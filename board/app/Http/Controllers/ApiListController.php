@@ -15,10 +15,14 @@ class ApiListController extends Controller
 {
     function getList($id){
         $board = Boards::find($id);
-        return response()->json($board,200);
+        // return response()->json($board,200); code num 이외에 설정을 하기 위해 사용
+        // postman에서 header 등등 설정
+        return $board;// 자동으로 jason으로 200으로 넘겨줌
     }
     function postList(Request $req){
         //유효성 체크 필요
+
+
         $boards = new Boards([
             'title' => $req->title,
             'content' =>$req->content
@@ -32,29 +36,69 @@ class ApiListController extends Controller
         return $arr;
 
     }
-    public function putlist()
-{
-    $user = factory(User::class)->create();
-    $token = $user->generateToken();
-    $headers = ['Authorization' => "Bearer $token"];
-    $article = factory(Article::class)->create([
-        'title' => 'First Article',
-        'content' => 'First Body',
-    ]);
+    function putlist(Request $req, $id){
+        $arrData=[
+            'code' =>'0',
+            'msg' => '',
+            // 'org_data' => [],
+            // 'udt_data' => []
+        ];
+        $arr1 = ['id' => $id];
+        $req->merge($arr1);
 
-    $payload = [
-        'title' => 'Lorem',
-        'content' => 'Ipsum',
-    ];
+        $validator = Validator::make($req->all(),
+            [
+                'id' => 'required|exists:boards|integer',
+                'title' => 'required|between:3,30'
+                ,'content' => 'required|max:2000'
+            ]
+        );
+        if($validator->fails()){
+            $arrData['code']= 'E01';
+            $arrData['msg']= 'Validate Error';
+            $arrData['errmsg'] = $validator->errors()->all();
+            return $arrData;
+        }else{$result = Boards::find($id);
+            $result->title=$req->title;
+            $result->content=$req->content;
+            $result->save();
 
-    $response = $this->json('PUT', '/api/articles/' . $article->id, $payload, $headers)
-        ->assertStatus(200)
-        ->assertJson([
-            'title' => 'Lorem',
-            'content' => 'Ipsum'
-        ]);
+            $arr['code'] = '0';
+            $arr['msg'] = 'success';
+            $arr['data']=$result->only('title','content');
+            return $arr;}
+    }
 
-    return $response;
-}
+    function deletelist($id){
+        $arrData=[
+            'code' =>'0',
+            'msg' => '',
+            // 'org_data' => [],
+            // 'udt_data' => []
+        ];
+        $data['id'] = $id;
+        $validator = Validator::make( $data,
+            [
+                'id' => 'required|exists:boards|integer',
+            ]
+        );
+        if($validator->fails()){
+            $arrData['code']= 'E01';
+            $arrData['msg']= 'Validate Error';
+            $arrData['errmsg'] = 'ID NOT FOUND';
+            return $arrData;
+        }else{
+            $board=Boards::find($id);
+            if($board){
+                $board->delete();
+                $arrData['code'] = '0';
+                $arrData['msg'] = 'success';
+            }else{
+                $arrData['code']='E02';
+                $arrData['msg']='Already Deleted';
+            }
 
+        }
+        return $arrData;
+    }
 }
